@@ -48,8 +48,8 @@ pub struct GraphHadamard {
     input: Rc<<GraphHadamard as QGate<Graph>>::Input>,
 }
 impl QGate<Graph> for GraphHadamard {
-    type Input = Box<GraphQubit>;
-    type Output = Box<GraphQubit>;
+    type Input = Box<dyn Qubit<Graph>>;
+    type Output = Box<dyn Qubit<Graph>>;
     fn apply(q: Self::Input) -> Self::Output {
         let gate = Rc::new(GraphHadamard { input: Rc::new(q) });
         let gate_output = GraphGateOutput { index: 0, gate };
@@ -63,7 +63,7 @@ pub struct GraphCNOT {
     input: Rc<<GraphCNOT as QGate<Graph>>::Input>,
 }
 impl QGate<Graph> for GraphCNOT {
-    type Input = (Box<GraphQubit>, Box<GraphQubit>);
+    type Input = (Box<dyn Qubit<Graph>>, Box<dyn Qubit<Graph>>);
     type Output = Self::Input;
     fn apply(q: Self::Input) -> Self::Output {
         let input = Rc::new(q);
@@ -89,7 +89,7 @@ pub struct GraphCZ {
     input: Rc<<GraphCZ as QGate<Graph>>::Input>,
 }
 impl QGate<Graph> for GraphCZ {
-    type Input = (Box<GraphQubit>, Box<GraphQubit>);
+    type Input = (Box<dyn Qubit<Graph>>, Box<dyn Qubit<Graph>>);
     type Output = Self::Input;
     fn apply(q: Self::Input) -> Self::Output {
         let input = Rc::new(q);
