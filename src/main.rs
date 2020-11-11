@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-use std::marker::PhantomData;
+use std::any::Any;
 use std::rc::Rc;
 
 ////////// traits //////////
@@ -67,24 +67,9 @@ struct Graph {}
 impl QBackend for Graph {}
 
 #[derive(Debug)]
-struct GraphGateOutput<G>
-where
-    G: QGate<Graph> + std::fmt::Debug,
-    G::Input: std::fmt::Debug,
-{
+struct GraphGateOutput {
     index: u32,
-    gate: Rc<G>,
-    input: Rc<G::Input>,
-}
-
-#[derive(Debug)]
-struct GraphInitialGate {}
-impl QGate<Graph> for GraphInitialGate {
-    type Input = ();
-    type Output = ();
-    fn apply(qs: Self::Input) -> Self::Output {
-        qs
-    }
+    gate: Rc<dyn Any>,
 }
 
 struct GraphPublicGraph {}
@@ -95,17 +80,11 @@ impl QPublicGraph<Graph> for GraphPublicGraph {
 }
 
 #[derive(Debug)]
-enum GraphQubit<G>
-where
-    G: QGate<Graph> + std::fmt::Debug,
-{
+enum GraphQubit {
     Computational(QComputationalBasis),
-    GateOutput(GraphGateOutput<G>),
+    GateOutput(GraphGateOutput),
 }
-impl<G> Qubit<Graph> for GraphQubit<G>
-where
-    G: QGate<Graph> + std::fmt::Debug,
-{
+impl Qubit<Graph> for GraphQubit {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         Box::new(GraphPublicGraph {})
     }
@@ -115,56 +94,36 @@ where
 }
 
 #[derive(Debug)]
-struct GraphHadamard<G> {
-    phantom: PhantomData<G>,
+struct GraphHadamard {
+    input: Rc<<GraphHadamard as QGate<Graph>>::Input>,
 }
-impl<G> QGate<Graph> for GraphHadamard<G>
-where
-    G: QGate<Graph> + std::fmt::Debug,
-{
-    type Input = Box<GraphQubit<G>>;
-    type Output = Box<GraphQubit<GraphHadamard<G>>>;
+impl QGate<Graph> for GraphHadamard {
+    type Input = Box<GraphQubit>;
+    type Output = Box<GraphQubit>;
     fn apply(q: Self::Input) -> Self::Output {
-        let gate = Rc::new(GraphHadamard {
-            phantom: PhantomData,
-        });
-        let gate_output = GraphGateOutput {
-            index: 0,
-            gate,
-            input: Rc::new(q),
-        };
+        let gate = Rc::new(GraphHadamard { input: Rc::new(q) });
+        let gate_output = GraphGateOutput { index: 0, gate };
         Box::new(GraphQubit::GateOutput(gate_output))
     }
 }
 
 #[derive(Debug)]
-struct GraphCNOT<G> {
-    phantom: PhantomData<G>,
+struct GraphCNOT {
+    input: Rc<<GraphCNOT as QGate<Graph>>::Input>,
 }
-impl<G1, G2> QGate<Graph> for GraphCNOT<(G1, G2)>
-where
-    G1: QGate<Graph> + std::fmt::Debug,
-    G2: QGate<Graph> + std::fmt::Debug,
-{
-    type Input = (Box<GraphQubit<G1>>, Box<GraphQubit<G2>>);
-    type Output = (
-        Box<GraphQubit<GraphCNOT<(G1, G2)>>>,
-        Box<GraphQubit<GraphCNOT<(G1, G2)>>>,
-    );
+impl QGate<Graph> for GraphCNOT {
+    type Input = (Box<GraphQubit>, Box<GraphQubit>);
+    type Output = Self::Input;
     fn apply(q: Self::Input) -> Self::Output {
-        let gate = Rc::new(GraphCNOT {
-            phantom: PhantomData,
-        });
         let input = Rc::new(q);
+        let gate = Rc::new(GraphCNOT { input });
         let gate_output1 = GraphGateOutput {
             index: 0,
             gate: gate.clone(),
-            input: input.clone(),
         };
         let gate_output2 = GraphGateOutput {
             index: 1,
             gate: gate.clone(),
-            input: input.clone(),
         };
         (
             Box::new(GraphQubit::GateOutput(gate_output1)),
@@ -174,33 +133,22 @@ where
 }
 
 #[derive(Debug)]
-struct GraphCZ<G> {
-    phantom: PhantomData<G>,
+struct GraphCZ {
+    input: Rc<<GraphCZ as QGate<Graph>>::Input>,
 }
-impl<G1, G2> QGate<Graph> for GraphCZ<(G1, G2)>
-where
-    G1: QGate<Graph> + std::fmt::Debug,
-    G2: QGate<Graph> + std::fmt::Debug,
-{
-    type Input = (Box<GraphQubit<G1>>, Box<GraphQubit<G2>>);
-    type Output = (
-        Box<GraphQubit<GraphCZ<(G1, G2)>>>,
-        Box<GraphQubit<GraphCZ<(G1, G2)>>>,
-    );
+impl QGate<Graph> for GraphCZ {
+    type Input = (Box<GraphQubit>, Box<GraphQubit>);
+    type Output = Self::Input;
     fn apply(q: Self::Input) -> Self::Output {
-        let gate = Rc::new(GraphCZ {
-            phantom: PhantomData,
-        });
         let input = Rc::new(q);
+        let gate = Rc::new(GraphCZ { input });
         let gate_output1 = GraphGateOutput {
             index: 0,
             gate: gate.clone(),
-            input: input.clone(),
         };
         let gate_output2 = GraphGateOutput {
             index: 1,
             gate: gate.clone(),
-            input: input.clone(),
         };
         (
             Box::new(GraphQubit::GateOutput(gate_output1)),
@@ -213,9 +161,9 @@ where
 
 fn main() {
     // 初期状態を準備（0 -> 2へテレポートする）
-    let q0_0 = GraphQubit::Computational::<GraphInitialGate>(QComputationalBasis::Zero);
-    let q1_0 = GraphQubit::Computational::<GraphInitialGate>(QComputationalBasis::Zero);
-    let q2_0 = GraphQubit::Computational::<GraphInitialGate>(QComputationalBasis::Zero);
+    let q0_0 = GraphQubit::Computational(QComputationalBasis::Zero);
+    let q1_0 = GraphQubit::Computational(QComputationalBasis::Zero);
+    let q2_0 = GraphQubit::Computational(QComputationalBasis::Zero);
 
     // 1にH
     let q1_1 = GraphHadamard::apply(Box::new(q1_0));
