@@ -11,7 +11,7 @@ pub enum QBasis {
 }
 
 // グラフに関する操作（単一Qubit）
-pub trait QPublicGraph<T>
+pub trait QPublicGraph<T>: Debug
 where
     T: QBackend,
 {
@@ -19,13 +19,27 @@ where
     fn measure(&self) -> QBasis;
 }
 
-// 計算グラフに変換可能であることを示すトレイト（単一実体）
 pub trait QInspectable<T>: Debug
+where
+    T: QBackend,
+{
+}
+
+// 計算グラフに変換可能であることを示すトレイト（単一実体）
+pub trait QInspectableQubit<T>: QInspectable<T>
 where
     T: QBackend,
 {
     // 単一の計算依存グラフを作成する
     fn inspect(&self) -> Box<dyn QPublicGraph<T>>;
+}
+
+pub trait QInspectableGate<T>: QInspectable<T>
+where
+    T: QBackend,
+{
+    // 単一の計算依存グラフを作成する
+    fn inspect(&self, index: u32) -> Box<dyn QPublicGraph<T>>;
 }
 
 pub trait QMultipleInspectable<T>: Debug
@@ -36,14 +50,14 @@ where
 }
 
 // Qubit
-pub trait Qubit<T>: QInspectable<T>
+pub trait Qubit<T>: QInspectableQubit<T>
 where
     T: QBackend,
 {
 }
 
 // 量子ゲート（測定も含む）
-pub trait QGate<T>: QInspectable<T>
+pub trait QGate<T>: QInspectableGate<T>
 where
     T: QBackend,
 {
