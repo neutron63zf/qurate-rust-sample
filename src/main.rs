@@ -3,9 +3,9 @@ use qurate::core::*;
 
 fn main() {
     // 初期状態を準備（0 -> 2へテレポートする）
-    let q0_0 = init_graph_qubit(QComputationalBasis::Zero);
-    let q1_0 = init_graph_qubit(QComputationalBasis::Zero);
-    let q2_0 = init_graph_qubit(QComputationalBasis::Zero);
+    let q0_0 = init_graph_qubit(QBasis::Zero);
+    let q1_0 = init_graph_qubit(QBasis::Zero);
+    let q2_0 = init_graph_qubit(QBasis::Zero);
 
     // 1にH
     let q1_1 = GraphHadamard::apply(q1_0);

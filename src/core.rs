@@ -5,7 +5,7 @@ pub trait QBackend {}
 
 #[derive(Debug)]
 // 測定結果
-pub enum QComputationalBasis {
+pub enum QBasis {
     Zero,
     One,
 }
@@ -16,7 +16,7 @@ where
     T: QBackend,
 {
     // 単一Qubitの測定を行う
-    fn measure(&self) -> QComputationalBasis;
+    fn measure(&self) -> QBasis;
 }
 
 // 計算グラフに変換可能であることを示すトレイト（単一実体）

@@ -17,29 +17,29 @@ pub struct GraphGateOutput {
 
 // 計算グラフの公開された表現
 pub enum GraphPublicGraph {
-    QGate {
+    Gate {
         gate_name: String,
         input: Vec<GraphPublicGraph>,
     },
-    Basis(QComputationalBasis),
+    Basis(QBasis),
 }
 impl QPublicGraph<Graph> for GraphPublicGraph {
     // Graphのmeasureを直接実行しても計算は行われないのでこれで良い
-    fn measure(&self) -> QComputationalBasis {
-        QComputationalBasis::Zero
+    fn measure(&self) -> QBasis {
+        QBasis::Zero
     }
 }
 
 // Qubit
 #[derive(Debug)]
 pub enum GraphQubit {
-    Computational(QComputationalBasis),
-    GateOutput(GraphGateOutput),
+    Basis(QBasis),
+    Gate(GraphGateOutput),
 }
 impl Qubit<Graph> for GraphQubit {}
 
-pub fn init_graph_qubit(b: QComputationalBasis) -> Box<GraphQubit> {
-    Box::new(GraphQubit::Computational(b))
+pub fn init_graph_qubit(b: QBasis) -> Box<GraphQubit> {
+    Box::new(GraphQubit::Basis(b))
 }
 
 // H ゲート
@@ -53,7 +53,7 @@ impl QGate<Graph> for GraphHadamard {
     fn apply(q: Self::Input) -> Self::Output {
         let gate = Rc::new(GraphHadamard { input: Rc::new(q) });
         let gate_output = GraphGateOutput { index: 0, gate };
-        Box::new(GraphQubit::GateOutput(gate_output))
+        Box::new(GraphQubit::Gate(gate_output))
     }
 }
 
@@ -77,8 +77,8 @@ impl QGate<Graph> for GraphCNOT {
             gate: gate.clone(),
         };
         (
-            Box::new(GraphQubit::GateOutput(gate_output1)),
-            Box::new(GraphQubit::GateOutput(gate_output2)),
+            Box::new(GraphQubit::Gate(gate_output1)),
+            Box::new(GraphQubit::Gate(gate_output2)),
         )
     }
 }
@@ -103,8 +103,8 @@ impl QGate<Graph> for GraphCZ {
             gate: gate.clone(),
         };
         (
-            Box::new(GraphQubit::GateOutput(gate_output1)),
-            Box::new(GraphQubit::GateOutput(gate_output2)),
+            Box::new(GraphQubit::Gate(gate_output1)),
+            Box::new(GraphQubit::Gate(gate_output2)),
         )
     }
 }
@@ -113,24 +113,24 @@ impl QGate<Graph> for GraphCZ {
 impl QInspectable<Graph> for GraphQubit {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         // TODO
-        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+        Box::new(GraphPublicGraph::Basis(QBasis::Zero))
     }
 }
 impl QInspectable<Graph> for GraphHadamard {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         // TODO
-        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+        Box::new(GraphPublicGraph::Basis(QBasis::Zero))
     }
 }
 impl QInspectable<Graph> for GraphCNOT {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         // TODO
-        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+        Box::new(GraphPublicGraph::Basis(QBasis::Zero))
     }
 }
 impl QInspectable<Graph> for GraphCZ {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         // TODO
-        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+        Box::new(GraphPublicGraph::Basis(QBasis::Zero))
     }
 }
