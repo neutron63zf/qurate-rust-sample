@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 // Graph, ClassicPure, Qisikit, ClassicDensityなどの実装
 pub trait QBackend {}
 
@@ -17,19 +19,31 @@ where
     fn measure(&self) -> QComputationalBasis;
 }
 
-// Qubit
-pub trait Qubit<T>
+// 計算グラフに変換可能であることを示すトレイト（単一実体）
+pub trait QInspectable<T>: Debug
 where
     T: QBackend,
 {
-    // 単一Qubitの計算依存グラフを作成する
+    // 単一の計算依存グラフを作成する
     fn inspect(&self) -> Box<dyn QPublicGraph<T>>;
-    // 単一Qubitだけでなく、複数のQubitの計算依存グラフをまとめて作成する（共通する依存関係を適切に処理する）
-    fn associate(&self, qs: Vec<Box<&dyn Qubit<T>>>) -> Vec<Box<dyn QPublicGraph<T>>>;
+}
+
+pub trait QMultipleInspectable<T>: Debug
+where
+    T: QBackend,
+{
+    fn inspect_vec(qs: Vec<Box<&dyn Qubit<T>>>) -> Vec<Box<dyn QPublicGraph<T>>>;
+}
+
+// Qubit
+pub trait Qubit<T>: QInspectable<T>
+where
+    T: QBackend,
+{
 }
 
 // 量子ゲート（測定も含む）
-pub trait QGate<T>
+pub trait QGate<T>: QInspectable<T>
 where
     T: QBackend,
 {

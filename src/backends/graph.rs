@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 use crate::core::*;
-use std::any::Any;
 use std::rc::Rc;
 
+// バックエンド宣言
 // 計算グラフ
 pub struct Graph {}
 impl QBackend for Graph {}
@@ -12,10 +12,17 @@ impl QBackend for Graph {}
 #[derive(Debug)]
 pub struct GraphGateOutput {
     index: u32,
-    gate: Rc<dyn Any>,
+    gate: Rc<dyn QInspectable<Graph>>,
 }
 
-struct GraphPublicGraph {}
+// 計算グラフの公開された表現
+pub enum GraphPublicGraph {
+    QGate {
+        gate_name: String,
+        input: Vec<GraphPublicGraph>,
+    },
+    Basis(QComputationalBasis),
+}
 impl QPublicGraph<Graph> for GraphPublicGraph {
     // Graphのmeasureを直接実行しても計算は行われないのでこれで良い
     fn measure(&self) -> QComputationalBasis {
@@ -23,22 +30,19 @@ impl QPublicGraph<Graph> for GraphPublicGraph {
     }
 }
 
+// Qubit
 #[derive(Debug)]
 pub enum GraphQubit {
     Computational(QComputationalBasis),
     GateOutput(GraphGateOutput),
 }
-impl Qubit<Graph> for GraphQubit {
-    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
-        // TODO
-        Box::new(GraphPublicGraph {})
-    }
-    fn associate(&self, qs: Vec<Box<&dyn Qubit<Graph>>>) -> Vec<Box<dyn QPublicGraph<Graph>>> {
-        // TODO
-        vec![Box::new(GraphPublicGraph {})]
-    }
+impl Qubit<Graph> for GraphQubit {}
+
+pub fn init_graph_qubit(b: QComputationalBasis) -> Box<GraphQubit> {
+    Box::new(GraphQubit::Computational(b))
 }
 
+// H ゲート
 #[derive(Debug)]
 pub struct GraphHadamard {
     input: Rc<<GraphHadamard as QGate<Graph>>::Input>,
@@ -53,6 +57,7 @@ impl QGate<Graph> for GraphHadamard {
     }
 }
 
+// CNOT ゲート
 #[derive(Debug)]
 pub struct GraphCNOT {
     input: Rc<<GraphCNOT as QGate<Graph>>::Input>,
@@ -78,6 +83,7 @@ impl QGate<Graph> for GraphCNOT {
     }
 }
 
+// CZ ゲート
 #[derive(Debug)]
 pub struct GraphCZ {
     input: Rc<<GraphCZ as QGate<Graph>>::Input>,
@@ -100,5 +106,31 @@ impl QGate<Graph> for GraphCZ {
             Box::new(GraphQubit::GateOutput(gate_output1)),
             Box::new(GraphQubit::GateOutput(gate_output2)),
         )
+    }
+}
+
+// 計算グラフ化を行う処理
+impl QInspectable<Graph> for GraphQubit {
+    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
+        // TODO
+        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+    }
+}
+impl QInspectable<Graph> for GraphHadamard {
+    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
+        // TODO
+        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+    }
+}
+impl QInspectable<Graph> for GraphCNOT {
+    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
+        // TODO
+        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
+    }
+}
+impl QInspectable<Graph> for GraphCZ {
+    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
+        // TODO
+        Box::new(GraphPublicGraph::Basis(QComputationalBasis::Zero))
     }
 }
