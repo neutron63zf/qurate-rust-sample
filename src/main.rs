@@ -9,20 +9,10 @@ use std::rc::Rc;
 trait QBackend {}
 
 #[derive(Debug)]
-
 // 測定結果
 enum QComputationalBasis {
     Zero,
     One,
-}
-
-// グラフに関する操作（複数Qubit）
-trait QPublicMultiGraph<T>
-where
-    T: QBackend,
-{
-    // 複数Qubitの測定を行う
-    fn measure(qs: Vec<Box<dyn Qubit<T>>>) -> Vec<QComputationalBasis>;
 }
 
 // グラフに関する操作（単一Qubit）
@@ -42,7 +32,7 @@ where
     // 単一Qubitの計算依存グラフを作成する
     fn inspect(&self) -> Box<dyn QPublicGraph<T>>;
     // 単一Qubitだけでなく、複数のQubitの計算依存グラフをまとめて作成する（共通する依存関係を適切に処理する）
-    fn associate(&self, qs: Vec<Box<dyn Qubit<T>>>) -> Vec<Box<dyn QPublicGraph<T>>>;
+    fn associate(&self, qs: Vec<Box<&dyn Qubit<T>>>) -> Vec<Box<dyn QPublicGraph<T>>>;
 }
 
 // 量子ゲート（測定も含む）
@@ -88,7 +78,7 @@ impl Qubit<Graph> for GraphQubit {
     fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
         Box::new(GraphPublicGraph {})
     }
-    fn associate(&self, qs: Vec<Box<dyn Qubit<Graph>>>) -> Vec<Box<dyn QPublicGraph<Graph>>> {
+    fn associate(&self, qs: Vec<Box<&dyn Qubit<Graph>>>) -> Vec<Box<dyn QPublicGraph<Graph>>> {
         vec![Box::new(GraphPublicGraph {})]
     }
 }
