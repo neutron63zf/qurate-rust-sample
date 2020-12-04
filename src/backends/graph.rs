@@ -1,26 +1,45 @@
 use crate::core::*;
+use std::collections::HashSet;
+use std::fmt::Debug;
 use std::rc::Rc;
+use uuid::Uuid;
 
 // バックエンド宣言
 // 計算グラフ
 pub struct Graph {}
 impl QBackend for Graph {}
 
+trait GraphQGate: QGate<Graph> {}
+
 // 中身にはアクセスできないのでセーフ
 #[derive(Debug)]
 pub struct GraphGateOutput {
     index: u32,
-    gate: Rc<dyn QInspectableGate<Graph>>,
+    gate: Rc<dyn QInspectable<Graph>>,
+}
+
+#[derive(Debug)]
+struct IdWrapper<T>
+where
+    T: QInspectable<Graph>,
+{
+    id: Option<Uuid>,
+    nodes: HashSet<Rc<dyn QInspectable<Graph>>>,
+    content: T,
 }
 
 // 計算グラフの公開された表現
 #[derive(Debug)]
 pub enum GraphPublicGraph {
     Gate {
-        index: u32,
         gate_name: String,
-        input: Vec<Box<dyn QPublicGraph<Graph>>>,
+        input: Vec<Rc<dyn QPublicGraph<Graph>>>,
     },
+    GateOutput {
+        index: u32,
+        gate: Rc<dyn QPublicGraph<Graph>>,
+    },
+    // basisにnodesはいらない
     Basis(QBasis),
 }
 impl QPublicGraph<Graph> for GraphPublicGraph {
@@ -113,44 +132,34 @@ impl QGate<Graph> for GraphCZ {
 }
 
 // 計算グラフ化を行う処理
-impl QInspectable<Graph> for GraphQubit {}
-impl QInspectableQubit<Graph> for GraphQubit {
-    fn inspect(&self) -> Box<dyn QPublicGraph<Graph>> {
+impl QInspectable<Graph> for GraphQubit {
+    fn inspect(&self) -> Rc<dyn QPublicGraph<Graph>> {
         match self {
-            GraphQubit::Basis(QBasis::Zero) => Box::new(GraphPublicGraph::Basis(QBasis::Zero)),
-            GraphQubit::Basis(QBasis::One) => Box::new(GraphPublicGraph::Basis(QBasis::One)),
-            GraphQubit::Gate(gate_output) => {
-                let index = gate_output.index;
-                gate_output.gate.inspect(index)
-            }
+            GraphQubit::Basis(QBasis::Zero) => Rc::new(GraphPublicGraph::Basis(QBasis::Zero)),
+            GraphQubit::Basis(QBasis::One) => Rc::new(GraphPublicGraph::Basis(QBasis::One)),
+            GraphQubit::Gate(gate_output) => gate_output.gate.inspect(),
         }
     }
 }
-impl QInspectable<Graph> for GraphHadamard {}
-impl QInspectableGate<Graph> for GraphHadamard {
-    fn inspect(&self, index: u32) -> Box<dyn QPublicGraph<Graph>> {
-        Box::new(GraphPublicGraph::Gate {
-            index,
+impl QInspectable<Graph> for GraphHadamard {
+    fn inspect(&self) -> Rc<dyn QPublicGraph<Graph>> {
+        Rc::new(GraphPublicGraph::Gate {
             gate_name: "GraphHadamard".to_string(),
             input: vec![self.input.inspect()],
         })
     }
 }
-impl QInspectable<Graph> for GraphCNOT {}
-impl QInspectableGate<Graph> for GraphCNOT {
-    fn inspect(&self, index: u32) -> Box<dyn QPublicGraph<Graph>> {
-        Box::new(GraphPublicGraph::Gate {
-            index,
+impl QInspectable<Graph> for GraphCNOT {
+    fn inspect(&self) -> Rc<dyn QPublicGraph<Graph>> {
+        Rc::new(GraphPublicGraph::Gate {
             gate_name: "GraphCNOT".to_string(),
             input: vec![self.input.0.inspect(), self.input.1.inspect()],
         })
     }
 }
-impl QInspectable<Graph> for GraphCZ {}
-impl QInspectableGate<Graph> for GraphCZ {
-    fn inspect(&self, index: u32) -> Box<dyn QPublicGraph<Graph>> {
-        Box::new(GraphPublicGraph::Gate {
-            index,
+impl QInspectable<Graph> for GraphCZ {
+    fn inspect(&self) -> Rc<dyn QPublicGraph<Graph>> {
+        Rc::new(GraphPublicGraph::Gate {
             gate_name: "GraphCZ".to_string(),
             input: vec![self.input.0.inspect(), self.input.1.inspect()],
         })
